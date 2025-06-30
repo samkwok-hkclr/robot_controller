@@ -1,0 +1,6 @@
+robot_controller_node:
+  ros__parameters:
+    group_name: arm # nachi mz07l 
+    eef_name: tcp
+    default_eef_step: 0.1
+    default_jump_threshold: 5.0
