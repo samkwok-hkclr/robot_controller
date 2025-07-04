@@ -148,7 +148,11 @@ RobotControllerNode::RobotControllerNode(
   RCLCPP_INFO(get_logger(), "Robot Controller Node is up.");
 }
 
-bool RobotControllerNode::are_poses_equal(const geometry_msgs::msg::Pose &pose1, const geometry_msgs::msg::Pose &pose2, double pos_tol, double ang_tol)
+bool RobotControllerNode::are_poses_equal(
+  const geometry_msgs::msg::Pose &pose1, 
+  const geometry_msgs::msg::Pose &pose2, 
+  double pos_tol, 
+  double ang_tol)
 {
   Eigen::Vector3d pos1(pose1.position.x, pose1.position.y, pose1.position.z);
   Eigen::Vector3d pos2(pose2.position.x, pose2.position.y, pose2.position.z);
@@ -202,7 +206,7 @@ bool RobotControllerNode::exec_waypoints(
   const double speed,
   std::string *ret_msg)
 {
-  return exec_waypoints(waypoints, eef_step_, jump_threshold_, speed, ret_msg);
+  return exec_waypoints(waypoints, eef_step_.load(), jump_threshold_.load(), speed, ret_msg);
 }
 
 bool RobotControllerNode::exec_waypoints(

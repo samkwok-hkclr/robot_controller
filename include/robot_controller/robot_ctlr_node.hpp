@@ -22,6 +22,8 @@
 
 #include "std_srvs/srv/trigger.hpp"
 
+#include "sensor_msgs/msg/region_of_interest.hpp"
+
 #include "robot_controller_msgs/msg/collision_object_map.hpp"
 
 #include "robot_controller_msgs/srv/add_collision_objects.hpp"
@@ -45,6 +47,8 @@ using std::placeholders::_2;
 class RobotControllerNode : public rclcpp::Node
 {
   using Trigger = std_srvs::srv::Trigger;
+
+  using RegionOfInterest = sensor_msgs::msg::RegionOfInterest;
 
   using GetCartesianPath = moveit_msgs::srv::GetCartesianPath;
   using ExecuteTrajectory = moveit_msgs::action::ExecuteTrajectory;
@@ -182,6 +186,9 @@ private:
   rclcpp::CallbackGroup::SharedPtr srv_ser_cbg_;
   rclcpp::CallbackGroup::SharedPtr action_cli_cbg_;
 
+  // ============== Publishers ==============
+
+  // ============== Service Clients ==============
   rclcpp::Client<GetCartesianPath>::SharedPtr get_cartesian_path_cli_;
 
   // ============== Debug Services ==============

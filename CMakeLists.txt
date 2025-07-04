@@ -18,6 +18,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(moveit_ros_planning_interface REQUIRED)
@@ -42,6 +43,7 @@ target_include_directories(robot_controller_node PUBLIC
 ament_target_dependencies(robot_controller_node 
   rclcpp 
   rclcpp_action
+  sensor_msgs
   std_srvs
   tf2_ros
   tf2_geometry_msgs
