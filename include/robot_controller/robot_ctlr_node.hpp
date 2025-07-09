@@ -176,14 +176,17 @@ private:
   bool are_poses_equal(
     const geometry_msgs::msg::Pose& pose1,
     const geometry_msgs::msg::Pose& pose2,
-    double pos_tol = 1e-6,
-    double ang_tol = 1e-6);
+    double pos_thd = 1e-6,
+    double ori_thd = 1e-6);
 
   // void monitorSensingRegion(const RegionOfInterest& sensing_region);
 
   // CLRError executePushedWayPoints(int robot_id);
   rclcpp::CallbackGroup::SharedPtr srv_cli_cbg_;
   rclcpp::CallbackGroup::SharedPtr srv_ser_cbg_;
+  rclcpp::CallbackGroup::SharedPtr exec_srv_ser_cbg_;
+  rclcpp::CallbackGroup::SharedPtr col_obj_srv_ser_cbg_;
+  rclcpp::CallbackGroup::SharedPtr get_col_obj_srv_ser_cbg_;
   rclcpp::CallbackGroup::SharedPtr action_cli_cbg_;
 
   // ============== Publishers ==============

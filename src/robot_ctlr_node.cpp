@@ -47,6 +47,9 @@ RobotControllerNode::RobotControllerNode(
 
   srv_cli_cbg_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
   srv_ser_cbg_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+  exec_srv_ser_cbg_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+  col_obj_srv_ser_cbg_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+  get_col_obj_srv_ser_cbg_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
   action_cli_cbg_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
   // ============== Debug Services ==============
@@ -61,56 +64,56 @@ RobotControllerNode::RobotControllerNode(
     "execute_joints", 
     std::bind(&RobotControllerNode::exec_joints_cb, this, _1, _2),
     rmw_qos_profile_services_default,
-    srv_ser_cbg_);
+    exec_srv_ser_cbg_);
 
   exec_pose_srv_ = create_service<ExecutePose>(
     "execute_pose", 
     std::bind(&RobotControllerNode::exec_pose_cb, this, _1, _2),
     rmw_qos_profile_services_default,
-    srv_ser_cbg_);
+    exec_srv_ser_cbg_);
 
   exec_waypoints_srv_ = create_service<ExecuteWaypoints>(
     "execute_waypoints", 
     std::bind(&RobotControllerNode::exec_waypoints_cb, this, _1, _2),
     rmw_qos_profile_services_default,
-    srv_ser_cbg_);
+    exec_srv_ser_cbg_);
 
   stop_exec_srv_ = create_service<Trigger>(
     "stop_execution", 
     std::bind(&RobotControllerNode::stop_exec_cb, this, _1, _2),
     rmw_qos_profile_services_default,
-    srv_ser_cbg_);
+    exec_srv_ser_cbg_);
 
   // ============== Collision Objects Services ==============
   add_collision_obj_srv_ = create_service<AddCollisionObjects>(
     "add_collision_objects", 
     std::bind(&RobotControllerNode::add_collision_obj_cb, this, _1, _2),
     rmw_qos_profile_services_default,
-    srv_ser_cbg_);
+    col_obj_srv_ser_cbg_);
 
   remove_collision_obj_srv_ = create_service<RemoveCollisionObjects>(
     "remove_collision_objects", 
     std::bind(&RobotControllerNode::remove_collision_obj_cb, this, _1, _2),
     rmw_qos_profile_services_default,
-    srv_ser_cbg_);
+    col_obj_srv_ser_cbg_);
 
   apply_attached_collision_obj_srv_ = create_service<ApplyAttachedCollisionObjects>(
     "apply_attached_collision_objects", 
     std::bind(&RobotControllerNode::apply_attached_collision_obj_cb, this, _1, _2),
     rmw_qos_profile_services_default,
-    srv_ser_cbg_);
+    col_obj_srv_ser_cbg_);
 
   move_collision_obj_srv_ = create_service<MoveCollisionObjects>(
     "move_collision_objects", 
     std::bind(&RobotControllerNode::move_collision_obj_cb, this, _1, _2),
     rmw_qos_profile_services_default,
-    srv_ser_cbg_);
+    col_obj_srv_ser_cbg_);
 
   get_collision_obj_from_secne_srv_ = create_service<GetCollisionObjectsFromScene>(
     "get_collision_objects_from_sence", 
     std::bind(&RobotControllerNode::get_collision_obj_from_scene_cb, this, _1, _2),
     rmw_qos_profile_services_default,
-    srv_ser_cbg_);
+    get_col_obj_srv_ser_cbg_);
     
   // ============== Utilities Services ==============
   get_curr_joint_states_srv_ = create_service<GetCurrentJointStates>(
@@ -129,13 +132,13 @@ RobotControllerNode::RobotControllerNode(
     "push_pose_array", 
     std::bind(&RobotControllerNode::push_pose_array_cb, this, _1, _2),
     rmw_qos_profile_services_default,
-    srv_ser_cbg_);
+    exec_srv_ser_cbg_);
 
   clear_pose_arr_srv_ = create_service<Trigger>(
     "clear_pose_array", 
     std::bind(&RobotControllerNode::clear_pose_array_cb, this, _1, _2),
     rmw_qos_profile_services_default,
-    srv_ser_cbg_);
+    exec_srv_ser_cbg_);
 
   exe_trajectory_cli_ = rclcpp_action::create_client<ExecuteTrajectory>(
     get_node_base_interface(),
@@ -151,13 +154,13 @@ RobotControllerNode::RobotControllerNode(
 bool RobotControllerNode::are_poses_equal(
   const geometry_msgs::msg::Pose &pose1, 
   const geometry_msgs::msg::Pose &pose2, 
-  double pos_tol, 
-  double ang_tol)
+  double pos_thd, 
+  double ori_thd)
 {
   Eigen::Vector3d pos1(pose1.position.x, pose1.position.y, pose1.position.z);
   Eigen::Vector3d pos2(pose2.position.x, pose2.position.y, pose2.position.z);
 
-  if ((pos1 - pos2).norm() > pos_tol) 
+  if ((pos1 - pos2).norm() > pos_thd) 
     return false;
   
   // Quaternion check (normalized)
@@ -175,7 +178,7 @@ bool RobotControllerNode::are_poses_equal(
   );
 
   // Check if q1 and q2 represent the same rotation (allowing for sign flips)
-  return (q1.angularDistance(q2) < ang_tol);
+  return (q1.angularDistance(q2) < ori_thd);
 }
 
 void RobotControllerNode::process_waypoints(std::vector<geometry_msgs::msg::Pose>& waypoints)
