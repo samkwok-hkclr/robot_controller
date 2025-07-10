@@ -12,11 +12,14 @@ void RobotControllerNode::get_curr_joint_states(
   {
     response->success = false;
     response->message = "Failed to get the joint states";
+    RCLCPP_ERROR(get_logger(), "%s", response->message.c_str());
     return;
   }
 
   response->joint_states = *joint_states;
   response->success = true;
+
+  RCLCPP_INFO(get_logger(), "%s successully", __FUNCTION__);
 }
 
 void RobotControllerNode::get_curr_pose_cb(
@@ -28,12 +31,15 @@ void RobotControllerNode::get_curr_pose_cb(
   if (!pose.has_value())
   {
     response->success = false;
-    response->message = "Failed to get current pose for joint '" + request->joint_name + "'";
+    response->message = "Failed to get current pose for joint [" + request->joint_name + "]";
+    RCLCPP_ERROR(get_logger(), "%s", response->message.c_str());
     return;
   }
 
   response->pose = *pose;
   response->success = true;
+
+  RCLCPP_INFO(get_logger(), "%s successully", __FUNCTION__);
 }
 
 void RobotControllerNode::push_pose_array_cb(
@@ -53,6 +59,8 @@ void RobotControllerNode::push_pose_array_cb(
   }
   
   response->success = true;
+
+  RCLCPP_INFO(get_logger(), "%s successully", __FUNCTION__);
 }
 
 void RobotControllerNode::clear_pose_array_cb(
@@ -63,6 +71,8 @@ void RobotControllerNode::clear_pose_array_cb(
   pushed_waypoints_.clear();
 
   response->success = true;
+  
+  RCLCPP_INFO(get_logger(), "%s successully", __FUNCTION__);
 }
 
 void RobotControllerNode::feedback_cb(
