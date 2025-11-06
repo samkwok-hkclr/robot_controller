@@ -4,10 +4,6 @@
 MoveGroup::MoveGroup(const rclcpp::NodeOptions& options, const std::string& name)
 : Node(name + "_move_group_interface", options)
 {
-  // declare_parameter<std::string>("robot_description", "");
-  // declare_parameter<std::string>("robot_description_semantic", "");
-  // declare_parameter<std::string>("kinematics", "");
-
   RCLCPP_INFO(get_logger(), "Move Group Node is up.");
 }
 
@@ -16,7 +12,6 @@ MoveGroup::~MoveGroup()
   move_group_.reset();
   planning_scene_.reset();
 }
-
 
 bool MoveGroup::init_move_group(std::string ns, std::string group_name, std::string eef_name, std::string ref_frame)
 {

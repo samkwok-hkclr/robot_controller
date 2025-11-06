@@ -5,21 +5,10 @@ RobotController::RobotController(
   std::shared_ptr<rclcpp::executors::MultiThreadedExecutor> executor)
 : Node("robot_controller", options)
 {
-  // std::string description_file;
-  // std::string semantic_file;
-  // std::string kinematics_file;
-
   declare_parameter<std::string>("move_group_namespace", "");
   declare_parameter<std::string>("group_name", "");
   declare_parameter<std::string>("eef_name", "");
   declare_parameter<std::string>("ref_frame", "");
-  // declare_parameter<std::string>("description_file", "");
-  // declare_parameter<std::string>("semantic_file", "");
-  // declare_parameter<std::string>("kinematics_file", "");
-
-  // declare_parameter<std::string>("robot_description", "");
-  // declare_parameter<std::string>("robot_description_semantic", "");
-  // declare_parameter<std::string>("robot_description_kinematics", "");
 
   declare_parameter<double>("default_eef_step", 0.01);
   declare_parameter<double>("default_jump_threshold", 5.0);
@@ -28,9 +17,6 @@ RobotController::RobotController(
   get_parameter("group_name", group_name_);
   get_parameter("eef_name", eef_name_);
   get_parameter("ref_frame", ref_frame_);
-  // get_parameter("description_file", description_file); // FIXME: It is empty
-  // get_parameter("semantic_file", semantic_file); // FIXME: It is empty
-  // get_parameter("kinematics_file", kinematics_file); // FIXME: It is empty
 
   eef_step_ = get_parameter("default_eef_step").as_double();
   jump_threshold_ = get_parameter("default_jump_threshold").as_double();
@@ -52,14 +38,6 @@ RobotController::RobotController(
   
   move_group_ = std::make_shared<MoveGroup>(move_group_options, group_name_);
   executor->add_node(move_group_->get_node_base_interface());
-
-  // if (!move_group_->config_robot(description_file, semantic_file, kinematics_file))
-  // {    
-  //   RCLCPP_INFO(get_logger(), "move group config Failed.");
-  //   rclcpp::shutdown();
-  //   return;
-  // }
-  // RCLCPP_INFO(get_logger(), "Robot Controller Node - configured robot");
 
   if (!move_group_->init_move_group(move_group_ns_, group_name_, eef_name_, ref_frame_))
   {
