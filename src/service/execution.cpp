@@ -107,11 +107,24 @@ void RobotController::exec_waypoints_cb(
   const std::shared_ptr<ExecuteWaypoints::Request> request, 
   std::shared_ptr<ExecuteWaypoints::Response> response)
 {
+  RCLCPP_INFO(get_logger(), "%s speed: %.2f", __FUNCTION__, request->speed);
+
+  double speed = 0.0;
+  if (request->speed > 1.0 && request->speed <= 100.0)
+  {
+    speed = request->speed;
+  }
+  else
+  {
+    speed = 50.0;
+    RCLCPP_INFO(get_logger(), "unknown speed. Default: 50.0");
+  }
+  
   response->success = exec_waypoints(
     request->waypoints, 
     request->eef_step == 0.0 ? eef_step_.load() : request->eef_step,
     request->jump_threshold == 0.0 ? jump_threshold_.load() : request->jump_threshold,
-    request->speed == 0.0 ? request->speed : 100.0,
+    speed,
     &response->message
   );
 }

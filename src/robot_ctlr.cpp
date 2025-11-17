@@ -336,20 +336,20 @@ bool RobotController::exec_waypoints(
   {
     for (auto js : trajectory.joint_trajectory.points.back().positions)
     {
-      RCLCPP_ERROR(get_logger(), "last point >> %.2f", js * 180.0 / 3.14159);
+      RCLCPP_ERROR(get_logger(), "last point >> %.2f", js * 180.0 / M_PI);
     }
     *ret_msg = "fraction < 1.0";
     return false;
   }
 
-  Float32 msg;
-  msg.data = speed;
-  speed_pub_->publish(msg);
+  // Float32 msg;
+  // msg.data = speed;
+  // speed_pub_->publish(msg);
 
-  // trajectory.joint_trajectory.header.frame_id = std::to_string(speed);
-
-  RCLCPP_WARN(get_logger(), "Scaling trajectory with robot speed: %.4f", speed / 100.0);
-  move_group_->compute_timestamps_totg(trajectory, speed / 100.0, speed / 100.0);
+  const double scale = speed / 100.0;
+  // const double scale = 0.5;
+  RCLCPP_WARN(get_logger(), "Scaling trajectory with robot speed: %.4f", scale);
+  move_group_->compute_timestamps_totg(trajectory, scale, scale);
 
   RCLCPP_WARN(get_logger(), "******** duration: %d.%d", 
     trajectory.joint_trajectory.points.back().time_from_start.sec, 
