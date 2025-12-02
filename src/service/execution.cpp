@@ -127,6 +127,7 @@ void RobotController::exec_waypoints_cb(
     speed,
     &response->message
   );
+  
 }
 
 void RobotController::stop_exec_cb(

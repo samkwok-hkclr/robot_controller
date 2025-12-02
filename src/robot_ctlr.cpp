@@ -330,17 +330,24 @@ bool RobotController::exec_waypoints(
     true, 
     &err_codes);
     
-  RCLCPP_INFO(get_logger(), "Compute Cartesian Path fraction: %.6f", fraction);
-
   if (fraction < 1.0)
   {
-    for (auto js : trajectory.joint_trajectory.points.back().positions)
+    if (trajectory.joint_trajectory.points.size() > 0)
     {
-      RCLCPP_ERROR(get_logger(), "last point >> %.2f", js * 180.0 / M_PI);
+      for (auto js : trajectory.joint_trajectory.points.back().positions)
+      {
+        RCLCPP_ERROR(get_logger(), "last point >> %.2f", js * 180.0 / M_PI);
+      }
     }
-    *ret_msg = "fraction < 1.0";
+
+    if (ret_msg)
+      *ret_msg = "fraction < 1.0";
+    
+    RCLCPP_ERROR(get_logger(), "Compute Cartesian Path fraction: %.6f <<<<<<", fraction);
     return false;
   }
+
+  RCLCPP_INFO(get_logger(), "Compute Cartesian Path fraction: %.6f", fraction);
 
   // Float32 msg;
   // msg.data = speed;
