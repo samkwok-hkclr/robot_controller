@@ -70,6 +70,7 @@ RobotController::RobotController(
   // ============== Publishers ==============
   speed_pub_ = create_publisher<Float32>("robot_speed", 10);
   curr_pose_pub_ = create_publisher<Pose>("pose", 10);
+  display_traj_pub_ = create_publisher<DisplayTrajectory>("display_planned_path", 10);
 
   RCLCPP_INFO(get_logger(), "Robot Controller Node - initiated publishers");
 

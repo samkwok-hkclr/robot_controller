@@ -56,6 +56,7 @@ class RobotController : public rclcpp::Node
 
   using RegionOfInterest = sensor_msgs::msg::RegionOfInterest;
 
+  using DisplayTrajectory = moveit_msgs::msg::DisplayTrajectory;
   using GetCartesianPath = moveit_msgs::srv::GetCartesianPath;
   using ExecuteTrajectory = moveit_msgs::action::ExecuteTrajectory;
 
@@ -220,6 +221,7 @@ private:
   // FIXME: The speed_pub_ is a quick-fix for setting speed
   rclcpp::Publisher<Float32>::SharedPtr speed_pub_;
   rclcpp::Publisher<Pose>::SharedPtr curr_pose_pub_;
+  rclcpp::Publisher<DisplayTrajectory>::SharedPtr display_traj_pub_;
 
   // ============== Service Clients ==============
   rclcpp::Client<GetCartesianPath>::SharedPtr get_cartesian_path_cli_;
