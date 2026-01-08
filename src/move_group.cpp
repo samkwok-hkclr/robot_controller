@@ -16,7 +16,7 @@ MoveGroup::~MoveGroup()
 bool MoveGroup::init_move_group(std::string ns, std::string group_name, std::string eef_name, std::string ref_frame)
 {
   RCLCPP_INFO(get_logger(), "Try to init Move Group Interface");
-  if (group_name.empty() || eef_name.empty())
+  if (group_name.empty())
   {
     RCLCPP_INFO(get_logger(), "group_name or eef_name is empty");
     return false;
@@ -55,10 +55,17 @@ bool MoveGroup::init_move_group(std::string ns, std::string group_name, std::str
     }
   }
 
-  if (!move_group_->setEndEffectorLink(eef_name))
+  if (eef_name.empty())
   {
-    RCLCPP_INFO(get_logger(), "SetEndEffectorLink Failed.");
-    return false;
+    RCLCPP_WARN(get_logger(), "end-effecter does not provided for group [%s].", group_name.c_str());
+  }
+  else
+  {
+    if (!move_group_->setEndEffectorLink(eef_name))
+    {
+      RCLCPP_INFO(get_logger(), "SetEndEffectorLink Failed.");
+      return false;
+    }
   }
 
   move_group_->setPoseReferenceFrame(ref_frame);
