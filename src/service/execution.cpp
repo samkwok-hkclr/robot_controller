@@ -10,11 +10,83 @@ void RobotController::exec_joints_cb(
   if (!success)
   {
     response->message = ret_msg;
-    response->success = false;
     return;
   }
 
-  if (move_group_->execute_joints(request->joints) != moveit::core::MoveItErrorCode::SUCCESS)
+  auto opt = move_group_->get_joint_limits();
+  if (!opt.has_value())
+  {
+    response->message = "Get joint limit failed";
+    return;
+  }
+
+  const auto& joint_limits = opt.value(); // std::vector<moveit_msgs::msg::JointLimits>
+
+  if (request->position.empty())
+  {
+    response->message = "Request contains no joint positions";
+    RCLCPP_ERROR(get_logger(), "Joint execution failed: %s", response->message.c_str());
+    return;
+  }
+
+  if (request->joint_names.size() != request->position.size())
+  {
+    response->message = "Request size does not match";
+    RCLCPP_ERROR(get_logger(), "%s", response->message.c_str());
+    return;
+  }
+
+  if (request->position.size() != joint_limits.size())
+  {
+    std::stringstream ss;
+    ss << "Joint count mismatch. Received: " << request->position.size() 
+       << ", Expected: " << joint_limits.size();
+    response->message = ss.str();
+    RCLCPP_ERROR(get_logger(), "%s", response->message.c_str());
+    return;
+  }
+
+  // Build lookup map: joint_name -> limits
+  std::unordered_map<std::string, moveit_msgs::msg::JointLimits> limit_map;
+  for (const auto& lim : joint_limits)
+  {
+    limit_map[lim.joint_name] = lim;
+  }
+
+  // Check each joint position
+  for (size_t i = 0; i < request->position.size(); ++i)
+  {
+    const std::string& joint_name = request->joint_names[i];
+    double position = request->position[i];
+
+    auto it = limit_map.find(joint_name);
+    if (it == limit_map.end())
+    {
+      RCLCPP_WARN(get_logger(), "No limits defined for joint '%s'", joint_name.c_str());
+      continue;
+    }
+
+    const auto& limits = it->second;
+
+    if (limits.has_position_limits)
+    {
+      if (position < limits.min_position || position > limits.max_position)
+      {
+        std::stringstream ss;
+        ss << "Joint '" << joint_name << "' out of limits. "
+           << "Value: " << position 
+           << ", Allowed: [" << limits.min_position << ", " << limits.max_position << "]";
+
+        response->message = ss.str();
+        response->success = false;
+        RCLCPP_ERROR(get_logger(), "Joint limit violation: %s", response->message.c_str());
+        return;
+      }
+    }
+  }
+
+
+  if (move_group_->execute_joints(request->position) != moveit::core::MoveItErrorCode::SUCCESS)
   {
     std::string err_msg = "execute_joints failed !!!!!!";
 
