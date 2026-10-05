@@ -12,6 +12,11 @@ void RobotControllerNode::cbExecuteJoints(
   const std::shared_ptr<ExecuteJoints::Request> request,
   std::shared_ptr<ExecuteJoints::Response> response)
 {
+  {
+    std::lock_guard<std::mutex> lock(current_source_mtx_);
+    current_source_ = "execute_joints";
+  }
+
   response->success = false;
 
   if (request->joint_names.size() != request->joint_positions.size()) {
@@ -77,6 +82,11 @@ void RobotControllerNode::cbExecutePose(
   const std::shared_ptr<ExecutePose::Request> request,
   std::shared_ptr<ExecutePose::Response> response)
 {
+  {
+    std::lock_guard<std::mutex> lock(current_source_mtx_);
+    current_source_ = "execute_pose";
+  }
+
   response->success = false;
 
   moveit_msgs::msg::MoveItErrorCodes plan_err;
@@ -106,6 +116,11 @@ void RobotControllerNode::cbExecuteWaypoints(
   const std::shared_ptr<ExecuteWaypoints::Request> request,
   std::shared_ptr<ExecuteWaypoints::Response> response)
 {
+  {
+    std::lock_guard<std::mutex> lock(current_source_mtx_);
+    current_source_ = "execute_waypoints";
+  }
+
   response->success = executeWaypoints(
     request->waypoints,
     request->eef_step,
@@ -122,6 +137,11 @@ void RobotControllerNode::cbExecuteJointWaypoints(
   const std::shared_ptr<ExecuteJointWaypoints::Request> request,
   std::shared_ptr<ExecuteJointWaypoints::Response> response)
 {
+  {
+    std::lock_guard<std::mutex> lock(current_source_mtx_);
+    current_source_ = "execute_joint_waypoints";
+  }
+
   response->success = false;
 
   moveit_msgs::msg::MoveItErrorCodes plan_err;

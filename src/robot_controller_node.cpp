@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <future>
 
 namespace robot_controller
 {
@@ -98,6 +99,7 @@ bool RobotControllerNode::initialize()
 
   createCallbackGroups();
   createPublishers();
+  createTimers();
   createServices();
   createActionClients();
 
@@ -117,9 +119,21 @@ void RobotControllerNode::createCallbackGroups()
 }
 
 // ---------------------------------------------------------------------------
+void RobotControllerNode::createTimers()
+{
+  execution_state_timer_ = create_wall_timer(
+    std::chrono::duration<double>(execution_state_publish_period_s_),
+    std::bind(&RobotControllerNode::publishExecutionState, this));
+}
+
+// ---------------------------------------------------------------------------
 void RobotControllerNode::createPublishers()
 {
-  speed_pub_ = create_publisher<std_msgs::msg::Float32>("robot_speed", rclcpp::QoS(10));
+  speed_pub_ = create_publisher<std_msgs::msg::Float32>("robot_speed", rclcpp::QoS(1));
+  rclcpp::QoS state_qos(rclcpp::KeepLast(1));
+  state_qos.transient_local();
+  state_qos.reliable();
+  execution_state_pub_ = create_publisher<robot_controller_msgs::msg::ExecutionState>("execution_state", state_qos);
 }
 
 // ---------------------------------------------------------------------------
@@ -236,6 +250,30 @@ void RobotControllerNode::createServices()
 }
 
 // ---------------------------------------------------------------------------
+void RobotControllerNode::publishExecutionState()
+{
+  const bool async_running = async_exec_in_progress_.load();
+  const bool sync_running  = sync_exec_in_progress_.load();
+
+  robot_controller_msgs::msg::ExecutionState msg;
+  msg.header.stamp = now();
+  msg.is_executing = async_running || sync_running;
+  msg.is_async     = async_running;
+
+  {
+    std::lock_guard<std::mutex> lock(last_async_result_mtx_);
+    msg.last_result = last_async_result_;
+  }
+
+  {
+    std::lock_guard<std::mutex> lock(current_source_mtx_);
+    msg.source = current_source_;
+  }
+
+  execution_state_pub_->publish(msg);
+}
+
+// ---------------------------------------------------------------------------
 bool RobotControllerNode::parseSpeed(
   double speed_percent, double & out_scaling, std::string & out_message) const
 {
@@ -271,18 +309,34 @@ bool RobotControllerNode::sendAsyncTrajectory(
 {
   if (sync_exec_in_progress_.load()) {
     out_message = "A synchronous execution is already running";
+    {                                                    // ← 4f
+      std::lock_guard<std::mutex> lock(current_source_mtx_);
+      current_source_.clear();
+    }
     return false;
   }
   if (async_exec_in_progress_.load()) {
     out_message = "Another async execution is already in progress";
+    {                                                    // ← 4f
+      std::lock_guard<std::mutex> lock(current_source_mtx_);
+      current_source_.clear();
+    }
     return false;
   }
   if (!exec_traj_action_cli_) {
     out_message = "Async action client is not initialized";
+    {                                                    // ← 4f
+      std::lock_guard<std::mutex> lock(current_source_mtx_);
+      current_source_.clear();
+    }
     return false;
   }
-  if (!exec_traj_action_cli_->action_server_is_ready()) {
-    out_message = "execute_trajectory action server is not available";
+  if (!exec_traj_action_cli_->wait_for_action_server(std::chrono::milliseconds(500))) {
+    out_message = "execute_trajectory action server not available (waited 500 ms)";
+    {                                                    // ← 4f
+      std::lock_guard<std::mutex> lock(current_source_mtx_);
+      current_source_.clear();
+    }
     return false;
   }
 
@@ -316,6 +370,10 @@ bool RobotControllerNode::sendAsyncTrajectory(
         last_async_result_ = code;
       }
       async_exec_in_progress_.store(false);
+      {
+        std::lock_guard<std::mutex> lock(current_source_mtx_);
+        current_source_.clear();     // ← clear after completion
+      }
       RCLCPP_INFO(
         get_logger(), "Async execution finished with MoveIt error code %d", code.val);
     };
@@ -330,6 +388,10 @@ bool RobotControllerNode::sendAsyncTrajectory(
   {
     async_exec_in_progress_.store(false);
     out_message = "Timeout waiting for execute_trajectory goal response";
+    {                                                    // ← 4f
+      std::lock_guard<std::mutex> lock(current_source_mtx_);
+      current_source_.clear();
+    }
     return false;
   }
 
@@ -337,6 +399,10 @@ bool RobotControllerNode::sendAsyncTrajectory(
   if (!goal_handle) {
     async_exec_in_progress_.store(false);
     out_message = "Async execution goal was rejected by the action server";
+    {                                                    // ← 4f
+      std::lock_guard<std::mutex> lock(current_source_mtx_);
+      current_source_.clear();
+    }
     return false;
   }
 
@@ -352,6 +418,14 @@ bool RobotControllerNode::executePlannedTrajectory(
   std::string & out_message)
 {
   if (async_execute) {
+    // if (!exec_traj_action_cli_->action_server_is_ready()) {
+    //   out_message = "execute_trajectory action server is not available";
+    //   {
+    //     std::lock_guard<std::mutex> lock(current_source_mtx_);
+    //     current_source_.clear();
+    //   }
+    //   return false;
+    // }
     // Async path: hand the trajectory off and return as soon as the goal
     // is accepted by the execute_trajectory action server.
     if (!sendAsyncTrajectory(trajectory, out_message)) {
@@ -366,17 +440,29 @@ bool RobotControllerNode::executePlannedTrajectory(
   if (async_exec_in_progress_.load()) {
     out_message = "Cannot execute synchronously: an async execution is in progress";
     out_error_code.val = moveit_msgs::msg::MoveItErrorCodes::FAILURE;
+    {
+      std::lock_guard<std::mutex> lock(current_source_mtx_);
+      current_source_.clear();
+    }
     return false;
   }
   if (sync_exec_in_progress_.exchange(true)) {
     out_message = "Another synchronous execution is already in progress";
     out_error_code.val = moveit_msgs::msg::MoveItErrorCodes::FAILURE;
+    {
+      std::lock_guard<std::mutex> lock(current_source_mtx_);
+      current_source_.clear();
+    }
     return false;
   }
 
   RCLCPP_INFO(get_logger(), "Starting synchronous execution...");
   out_error_code = move_group_->execute(trajectory);
   sync_exec_in_progress_.store(false);
+  {
+    std::lock_guard<std::mutex> lock(current_source_mtx_);
+    current_source_.clear();       // ← clear after completion
+  }
 
   if (out_error_code.val != moveit_msgs::msg::MoveItErrorCodes::SUCCESS) {
     out_message = "Synchronous execution failed (code " +

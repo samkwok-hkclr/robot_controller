@@ -21,6 +21,7 @@
 #include <std_srvs/srv/trigger.hpp>
 
 #include <robot_controller_msgs/msg/collision_object_map.hpp>
+#include <robot_controller_msgs/msg/execution_state.hpp>
 #include <robot_controller_msgs/srv/add_collision_objects.hpp>
 #include <robot_controller_msgs/srv/apply_attached_collision_objects.hpp>
 #include <robot_controller_msgs/srv/execute_joint_waypoints.hpp>
@@ -133,6 +134,7 @@ private:
   // -------------------------------------------------------------------------
   bool loadParameters();
   void createCallbackGroups();
+  void createTimers();
   void createPublishers();
   void createServices();
   void createActionClients();
@@ -153,6 +155,8 @@ private:
   bool sendAsyncTrajectory(
     const moveit_msgs::msg::RobotTrajectory & trajectory,
     std::string & out_message);
+
+  void publishExecutionState();
 
   // -------------------------------------------------------------------------
   // Service callbacks
@@ -264,9 +268,15 @@ private:
   rclcpp::CallbackGroup::SharedPtr action_cbg_;
 
   // -------------------------------------------------------------------------
+  // Timers
+  // -------------------------------------------------------------------------
+  rclcpp::TimerBase::SharedPtr execution_state_timer_;
+
+  // -------------------------------------------------------------------------
   // Publishers
   // -------------------------------------------------------------------------
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr speed_pub_;
+  rclcpp::Publisher<robot_controller_msgs::msg::ExecutionState>::SharedPtr execution_state_pub_;
 
   // -------------------------------------------------------------------------
   // Action client for async execution
@@ -280,6 +290,10 @@ private:
   std::atomic<bool> sync_exec_in_progress_{false};
   mutable std::mutex last_async_result_mtx_;
   moveit_msgs::msg::MoveItErrorCodes last_async_result_;
+
+  mutable std::mutex current_source_mtx_;
+  std::string current_source_;
+  double execution_state_publish_period_s_{0.1};
 
   // -------------------------------------------------------------------------
   // Service servers
