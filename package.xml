@@ -3,27 +3,32 @@
 <package format="3">
   <name>robot_controller</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>ROS 2 / MoveIt2 wrapper node exposing a curated service interface for a robot arm.</description>
   <maintainer email="mskwok@hkclr.hk">mskwok</maintainer>
-  <license>TODO: License declaration</license>
+  <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <build_depend>rclcpp_action</build_depend>
-  <build_depend>std_srvs</build_depend>
-  
-  <build_depend>sensor_msgs</build_depend>
-
-  <build_depend>tf2_geometry_msgs</build_depend>
-  <build_depend>tf2_ros</build_depend>
-
-  <build_depend>moveit_ros_planning_interface</build_depend>
-  <build_depend>moveit_msgs</build_depend>
-
-  <build_depend>robot_controller_msgs</build_depend>
+  <depend>rclcpp</depend>
+  <depend>rclcpp_action</depend>
+  <depend>rclcpp_components</depend>
+  <depend>std_msgs</depend>
+  <depend>std_srvs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>trajectory_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_geometry_msgs</depend>
+  <depend>eigen</depend>
+  <depend>moveit_core</depend>
+  <depend>moveit_msgs</depend>
+  <depend>moveit_ros_planning_interface</depend>
+  <depend>robot_controller_msgs</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
